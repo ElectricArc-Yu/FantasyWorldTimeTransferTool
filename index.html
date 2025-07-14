@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>特殊纪年法时间同步展示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        accent: '#FF7D00',
+                        neutral: '#1D2129',
+                        'neutral-light': '#F2F3F5',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-time {
+                transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .glass-effect {
+                backdrop-filter: blur(10px);
+                background-color: rgba(255, 255, 255, 0.7);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 font-sans">
+    <div class="max-w-4xl w-full glass-effect rounded-2xl shadow-xl overflow-hidden border border-white/30">
+        <div class="p-6 md:p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-[clamp(1.8rem,5vw,2.8rem)] font-bold text-neutral mb-2 tracking-tight text-shadow">
+                    时间同步展示
+                </h1>
+                <p class="text-gray-600 text-lg max-w-2xl mx-auto">
+                    原创世界观时间同步展示工具
+                </p>
+            </header>
+            
+            <main class="space-y-10">
+                <!-- 现实时间显示 -->
+                <div class="bg-white/80 rounded-xl shadow-lg p-6 transition-time hover:shadow-xl border border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-neutral flex items-center">
+                            <i class="fa fa-clock-o text-primary mr-2"></i> 现实时间
+                        </h2>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="time-display text-[clamp(1.5rem,4vw,2.5rem)] font-bold text-neutral">
+                            <span id="real-time" class="text-[clamp(1.5rem,4vw,2.5rem)] font-bold text-neutral">--:--:--</span>
+                        </div>
+                        <div class="date-display text-gray-600 text-lg">
+                            <span id="real-date" class="text-gray-600 text-lg">----年--月--日 --:--:--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 特殊纪年法时间显示 -->
+                <div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl shadow-lg p-6 transition-time hover:shadow-xl border border-primary/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-neutral flex items-center">
+                            <i class="fa fa-calendar text-primary mr-2"></i> 星岁纪年法时间
+                        </h2>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="time-display text-[clamp(1.5rem,4vw,2.5rem)] font-bold text-neutral">
+                            <span id="special-time" class="text-[clamp(1.5rem,4vw,2.5rem)] font-bold text-neutral">--:--:--</span>
+                        </div>
+                        <div class="date-display text-gray-600 text-lg">
+                            <span id="special-date" class="text-gray-600 text-lg">星----年--月--日 --:--:--</span>
+                        </div>
+                    </div>
+                </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // 特殊纪年法配置
+        const SPECIAL_YEAR_START = 2000;
+        const SPECIAL_MONTHS = [
+            '日0月', '日1月', '日2月', '日3月', '日4月', '日5月', '日6月',
+            '月6月', '月5月', '月4月', '月3月', '月2月', '月1月', '月0月'
+        ];
+        const SPECIAL_MONTH_DAYS = [8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 8];
+        const SPECIAL_DAY_HOURS = 22;
+        const SPECIAL_CYCLE_YEARS = 400;
+        const SPECIAL_CYCLE_PAUSE_HOURS = 13672;
+        
+        // DOM 元素
+        const realTimeEl = document.getElementById('real-time');
+        const realDateEl = document.getElementById('real-date');
+        const specialTimeEl = document.getElementById('special-time');
+        const specialDateEl = document.getElementById('special-date');
+        
+        // 更新时间函数
+        function updateTime() {
+            const now = new Date();
+            
+            // 更新现实时间显示
+            updateRealTime(now);
+            
+            // 计算并更新特殊纪年法时间
+            updateSpecialTime(now);
+        }
+        
+        // 更新现实时间显示
+        function updateRealTime(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            realTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+            realDateEl.textContent = `公元${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`;
+            
+            // 添加数字变化动画
+            realTimeEl.classList.add('scale-105');
+            setTimeout(() => realTimeEl.classList.remove('scale-105'), 200);
+        }
+        
+        // 计算并更新特殊纪年法时间
+        function updateSpecialTime(date) {
+            // 计算从2000年1月1日0时0分0秒开始的总毫秒数
+            const startDate = new Date(SPECIAL_YEAR_START, 0, 1, 0, 0, 0);
+            let totalMilliseconds = date - startDate;
+            
+            // 计算经历了多少个400年周期
+            const cycleYears = SPECIAL_CYCLE_YEARS;
+            const cycleDays = cycleYears * 365 + Math.floor(cycleYears / 4) - Math.floor(cycleYears / 100) + Math.floor(cycleYears / 400);
+            const cycleHours = cycleDays * 24;
+            const cyclePauseHours = SPECIAL_CYCLE_PAUSE_HOURS;
+            const cycleTotalHours = cycleHours + cyclePauseHours;
+            
+            let cycles = Math.floor(totalMilliseconds / (cycleTotalHours * 60 * 60 * 1000));
+            totalMilliseconds %= (cycleTotalHours * 60 * 60 * 1000);
+            
+            // 如果在暂停期内，计算暂停期结束后的时间
+            const cycleHoursInMs = cycleHours * 60 * 60 * 1000;
+            if (totalMilliseconds > cycleHoursInMs) {
+                totalMilliseconds = 0; // 暂停期内，特殊纪年法时间不前进
+            }
+            
+            // 计算总小时数
+            const totalHours = Math.floor(totalMilliseconds / (60 * 60 * 1000));
+            const remainingMs = totalMilliseconds % (60 * 60 * 1000);
+            
+            // 计算特殊纪年法中的年、月、日、时、分、秒
+            let specialYear = SPECIAL_YEAR_START + cycles * cycleYears;
+            let remainingHours = totalHours;
+            
+            // 计算年份
+            while (remainingHours > 0) {
+                const yearDays = 400; // 特殊纪年法每年固定400天
+                const yearHours = yearDays * SPECIAL_DAY_HOURS;
+                
+                if (remainingHours >= yearHours) {
+                    remainingHours -= yearHours;
+                    specialYear++;
+                } else {
+                    break;
+                }
+            }
+            specialYear = specialYear - 2000
+            
+            // 计算月份
+            let specialMonthIndex = 0;
+            while (remainingHours > 0 && specialMonthIndex < SPECIAL_MONTHS.length) {
+                const monthDays = SPECIAL_MONTH_DAYS[specialMonthIndex];
+                const monthHours = monthDays * SPECIAL_DAY_HOURS;
+                
+                if (remainingHours >= monthHours) {
+                    remainingHours -= monthHours;
+                    specialMonthIndex++;
+                } else {
+                    break;
+                }
+            }
+            
+            // 计算日期
+            const specialMonth = SPECIAL_MONTHS[specialMonthIndex];
+            const dayHours = SPECIAL_DAY_HOURS;
+            const specialDay = Math.floor(remainingHours / dayHours) + 1;
+            remainingHours %= dayHours;
+            
+            // 计算时分秒
+            const specialHour = Math.floor(remainingHours);
+            const specialMinute = Math.floor((remainingMs / (60 * 1000)) % 60);
+            const specialSecond = Math.floor((remainingMs / 1000) % 60);
+            
+            // 格式化并显示特殊纪年法时间
+            const formattedSpecialTime = `${String(specialHour).padStart(2, '0')}:${String(specialMinute).padStart(2, '0')}:${String(specialSecond).padStart(2, '0')}`;
+            const formattedSpecialDate = `星${specialYear}年  ${specialMonth} ${String(specialDay).padStart(2, '0')}日 ${formattedSpecialTime}`;
+            
+            specialTimeEl.textContent = formattedSpecialTime;
+            specialDateEl.textContent = formattedSpecialDate;
+            
+            // 添加数字变化动画
+            specialTimeEl.classList.add('scale-105');
+            setTimeout(() => specialTimeEl.classList.remove('scale-105'), 200);
+        }
+        
+        // 初始更新时间
+        updateTime();
+        
+        // 每秒更新一次时间
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
+    
